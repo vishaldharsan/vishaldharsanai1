@@ -1,19 +1,16 @@
-const GROQ_API_KEY = "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"; // Do not hard-code a real secret here.
-
 const sendBtn = document.getElementById("sendBtn");
 const userInput = document.getElementById("userInput");
 const chatBox = document.getElementById("chatBox");
 
 sendBtn.addEventListener("click", sendMessage);
 
-userInput.addEventListener("keypress", function (event) {
-    if (event.key === "Enter") {
+userInput.addEventListener("keypress", function (e) {
+    if (e.key === "Enter") {
         sendMessage();
     }
 });
 
 async function sendMessage() {
-
     const message = userInput.value.trim();
 
     if (message === "") return;
@@ -30,69 +27,54 @@ async function sendMessage() {
     chatBox.scrollTop = chatBox.scrollHeight;
 
     try {
+        const response = await puter.ai.chat(message, {
+            model: "openai/gpt-5.5"
+        });
 
-        const response = await fetch(
-            "https://api.groq.com/openai/v1/chat/completions",
-            {
-                method: "POST",
+        removeLoading();
 
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${GROQ_API_KEY}`
-                },
+        let reply = "";
 
-                body: JSON.stringify({
-                    model: "llama-3.3-70b-versatile",
-
-                    messages: [
-                        {
-                            role: "system",
-                            content:
-                                "You are Vishal Dharsan AI. You are friendly, intelligent, and helpful. Always introduce yourself as Vishal Dharsan AI."
-                        },
-                        {
-                            role: "user",
-                            content: message
-                        }
-                    ],
-
-                    temperature: 0.7,
-                    max_tokens: 1024
-                })
-            }
-        );
-
-        const data = await response.json();
-
-        document.getElementById("loading").remove();
-
-        if (data.error) {
-            addMessage("Error", data.error.message);
-            return;
+        if (typeof response === "string") {
+            reply = response;
+        } else if (response?.message?.content) {
+            reply = response.message.content;
+        } else if (response?.text) {
+            reply = response.text;
+        } else {
+            reply = JSON.stringify(response, null, 2);
         }
-
-        const reply = data.choices[0].message.content;
 
         addMessage("Vishal Dharsan AI", reply);
 
     } catch (error) {
-
-        const loadingElement = document.getElementById("loading");
-        if (loadingElement) {
-            loadingElement.remove();
-        }
-
-        addMessage("Error", error.message);
+        removeLoading();
+        addMessage("Error", error.message || "Something went wrong.");
     }
 }
 
 function addMessage(sender, message) {
+    const div = document.createElement("div");
+    div.className = "message";
 
-    const p = document.createElement("p");
+    div.innerHTML = `
+        <p><strong>${sender}</strong></p>
+        <p>${escapeHtml(message).replace(/\n/g, "<br>")}</p>
+    `;
 
-    p.innerHTML = `<b>${sender}:</b> ${message}`;
-
-    chatBox.appendChild(p);
-
+    chatBox.appendChild(div);
     chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function removeLoading() {
+    const loading = document.getElementById("loading");
+    if (loading) {
+        loading.remove();
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
 }
