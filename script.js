@@ -32,7 +32,7 @@ async function sendMessage() {
     try {
 
         const response = await fetch(
-            "https://api.groq.com/openai/v1/chat/completions",
+            "https://gnews.io/dashboard",
             {
                 method: "POST",
 
