@@ -1,98 +1,56 @@
-const GROQ_API_KEY=73702effcb7a47296dedf99091f2c0b8"; // Do not hard-code a real secret here.
+const GNEWS_API_KEY = "73702effcb7a47296dedf99091f2c0b8";
 
 const sendBtn = document.getElementById("sendBtn");
 const userInput = document.getElementById("userInput");
 const chatBox = document.getElementById("chatBox");
 
-sendBtn.addEventListener("click", sendMessage);
+sendBtn.addEventListener("click", searchNews);
 
-userInput.addEventListener("keypress", function (event) {
-    if (event.key === "Enter") {
-        sendMessage();
-    }
+userInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") searchNews();
 });
 
-async function sendMessage() {
+function addMessage(html) {
+    const div = document.createElement("div");
+    div.className = "message";
+    div.innerHTML = html;
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
 
-    const message = userInput.value.trim();
+async function searchNews() {
+    const query = userInput.value.trim();
+    if (!query) return;
 
-    if (message === "") return;
-
-    addMessage("You", message);
-
+    addMessage(`<span class="user">You:</span> ${query}`);
     userInput.value = "";
 
-    const loading = document.createElement("p");
-    loading.id = "loading";
-    loading.innerHTML = "<b>Vishal Dharsan AI:</b> Thinking...";
-    chatBox.appendChild(loading);
-
-    chatBox.scrollTop = chatBox.scrollHeight;
-
     try {
-
         const response = await fetch(
-            "https://gnews.io/dashboard",
-            {
-                method: "POST",
-
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${GROQ_API_KEY}`
-                },
-
-                body: JSON.stringify({
-                    model: "llama-3.3-70b-versatile",
-
-                    messages: [
-                        {
-                            role: "system",
-                            content:
-                                "You are Vishal Dharsan AI. You are friendly, intelligent, and helpful. Always introduce yourself as Vishal Dharsan AI."
-                        },
-                        {
-                            role: "user",
-                            content: message
-                        }
-                    ],
-
-                    temperature: 0.7,
-                    max_tokens: 1024
-                })
-            }
+            `https://gnews.io/api/v4/search?q=${encodeURIComponent(query)}&lang=en&max=5&apikey=${GNEWS_API_KEY}`
         );
 
         const data = await response.json();
 
-        document.getElementById("loading").remove();
-
-        if (data.error) {
-            addMessage("Error", data.error.message);
+        if (!data.articles || data.articles.length === 0) {
+            addMessage("<span class='ai'>News:</span> No news found.");
             return;
         }
 
-        const reply = data.choices[0].message.content;
+        let html = "<span class='ai'>Latest News:</span><br>";
 
-        addMessage("Vishal Dharsan AI", reply);
+        data.articles.forEach(article => {
+            html += `
+                <p>
+                    <strong>${article.title}</strong><br>
+                    <a href="${article.url}" target="_blank">${article.url}</a>
+                </p><br>
+            `;
+        });
+
+        addMessage(html);
 
     } catch (error) {
-
-        const loadingElement = document.getElementById("loading");
-        if (loadingElement) {
-            loadingElement.remove();
-        }
-
-        addMessage("Error", error.message);
+        addMessage(`<span class='ai'>Error:</span> ${error.message}`);
     }
-}
-
-function addMessage(sender, message) {
-
-    const p = document.createElement("p");
-
-    p.innerHTML = `<b>${sender}:</b> ${message}`;
-
-    chatBox.appendChild(p);
-
-    chatBox.scrollTop = chatBox.scrollHeight;
 }
