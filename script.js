@@ -1,4 +1,4 @@
-const GROQ_API_KEY = "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"; // Do not hard-code a real secret here.
+const GROQ_API_KEY=73702effcb7a47296dedf99091f2c0b8"; // Do not hard-code a real secret here.
 
 const sendBtn = document.getElementById("sendBtn");
 const userInput = document.getElementById("userInput");
